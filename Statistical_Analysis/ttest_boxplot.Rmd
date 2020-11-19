@@ -1,0 +1,147 @@
+---
+title: "t-test"
+author: "Yuqi_Zhang"
+date: "11/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+ct_info_cases_data = read_csv("data/ct_info_cases_data.csv")
+```
+
+```{r}
+ct_info_cases_data
+```
+```{r}
+table = matrix(nrow=4,ncol=4)
+for (i in 1:4){
+x = ct_info_cases_data %>% 
+  filter(pop_density_class == i) %>% 
+  select(estimate_cases4_density) %>% 
+  mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))}) %>% 
+    unlist(use.names = FALSE)
+for (j in 1:4){
+y = ct_info_cases_data %>% 
+  filter(pop_density_class == j) %>% 
+  select(estimate_cases4_density) %>% 
+  mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))}) %>% 
+  unlist(use.names = FALSE)
+table[i,j] = t.test(x, y, alternative = "less")[["p.value"]]
+}}
+# in case of population density, the cululative estimated cases density of group 1 is significant lower than that of group 4
+# in case of population density, group 1 has 
+```
+
+```{r}
+table
+```
+
+```{r}
+table = matrix(nrow=4,ncol=4)
+for (i in 1:4){
+x = ct_info_cases_data %>% 
+  filter(income_class == i) %>% 
+  select(estimate_cases4_density) %>% 
+  mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))}) %>% 
+    unlist(use.names = FALSE)
+for (j in 1:4){
+y = ct_info_cases_data %>% 
+  filter(income_class == j) %>% 
+  select(estimate_cases4_density) %>% 
+  mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))}) %>% 
+  unlist(use.names = FALSE)
+table[i,j] = t.test(x, y, alternative = "less")[["p.value"]]
+}}
+table
+```
+
+```{r}
+ct_info_cases_data %>%
+ filter(exposure4 >= 0 & exposure4 <= 0.02 | is.na(exposure4)) %>%
+ ggplot() +
+ aes(x = "", y = exposure4, group = pop_density_class) +
+ geom_boxplot() +
+ scale_color_distiller(palette = "Greens",direction = 1) +
+ labs(x = "Population density class (1, 2, 3, 4)", y = "Exposure Entropy") +
+ theme_classic() +
+ theme(aspect.ratio = 4) +
+ facet_grid(vars(), vars(pop_density_class))
+```
+
+```{r}
+ct_info_cases_data %>%
+ filter(exposure4 >= 0 & exposure4 <= 0.02 | is.na(exposure4)) %>%
+ ggplot() +
+ aes(x = "", y = exposure4, fill= income_class, group = income_class) +
+ geom_boxplot() +
+# scale_color_grey(start=0.8, end=0.2)+
+ scale_fill_distiller(palette = "Blues" ,direction = 1) +
+ labs(x = "Income class (1,2,3,4)", y = "Exposure Entropy") +
+ theme_classic() +
+ theme(aspect.ratio = 4) +
+ facet_grid(vars(), vars(income_class))
+```
+
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+
+ggplot(ct_info_cases_data) +
+ aes(x = "", y = estimate_cases4_density, color=, group = income_class) +
+ geom_boxplot() +
+  scale_color_distiller(palette = "Purples",direction = 1) +
+ labs(x = "Income class (1,2,3,4)", y = "Normalized Cumulative Case Number") +
+ theme_classic() +
+ theme(aspect.ratio = 4) +
+ facet_grid(vars(), vars(income_class))
+
+```
+
+```{r}
+ggplot(ct_info_cases_data) +
+ aes(x = "", y = estimate_cases4_density, color = , group = pop_density_class) +
+ geom_boxplot() +
+  scale_color_distiller(palette = "Oranges",direction = 1) +
+ labs(x = " Population density class (1,2,3,4)", y = "Normalized Cumulative Case Number") +
+ theme_classic() +
+ theme(aspect.ratio = 4) +
+ facet_grid(vars(), vars(pop_density_class))
+```
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+
+ct_info_cases_data %>%
+ filter(exposure1 >= 0 & exposure1 <= 0.018) %>%
+ ggplot() +
+ aes(x = "", y = exposure1) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+
+
+```
+
+```{r}
+logtrns = function(x){
+  log(1+x)
+}
+interval = c(0.1, 0.2, 0.5, 0.8, 0.9)
+
+quantile(logtrns(ct_info_cases_data$exposure1),probs=interval)
+quantile(logtrns(ct_info_cases_data$exposure2),probs=interval)
+quantile(logtrns(ct_info_cases_data$exposure3),probs=interval)
+quantile(logtrns(ct_info_cases_data$exposure4),probs=interval,na.rm = TRUE)
+```
+

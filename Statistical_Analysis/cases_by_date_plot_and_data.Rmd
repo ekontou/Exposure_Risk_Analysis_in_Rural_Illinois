@@ -1,0 +1,172 @@
+---
+title: "data"
+author: "Yuqi_Zhang"
+date: "10/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(plotly)
+```
+
+```{r}
+rural_data_raw = read_csv("../../dataset/rural.csv",col_names = TRUE)
+rural_data = rural_data_raw %>% 
+  filter(FIPS_State_Code == 17) %>% 
+  mutate(Micropolitan = str_detect(Metropolitan_Micropolitan, "Micropolitan"),
+         countyFIPS = 	
+paste(FIPS_State_Code,FIPS_County_Code,sep=""),
+County = word(County,1)) %>% 
+   select(countyFIPS, County, Micropolitan, Central_Outlying)
+rural_data
+```
+```{r}
+write.csv(rural_data, "../../dataset/rural_data.csv")
+```
+
+```{r}
+usa_data = read_csv("../Statistical_Analysis/usafacts_infections.csv")
+IL_cases_data = usa_data %>% 
+  filter(substr(countyFIPS,1,2) == "17") %>% 
+  select(countyFIPS,contains("#Cases"))
+IL_deaths_data = usa_data %>% 
+  filter(substr(countyFIPS,1,2) == "17") %>% 
+  select(countyFIPS,contains("#Deaths"))
+IL_cases_data
+write_csv(IL_cases_data,"data/IL_cases_data.csv")
+```
+```{r}
+county_info_data = read_csv("county_data_nona.csv")
+IL_info_data = county_info_data %>%
+  filter(StateName == "IL") %>% 
+  mutate(countyFIPS = as.character(countyFIPS)) %>% 
+  select(-X1,-STATEFP,-COUNTYFP, -StateName, -State)
+# IL_info_data[IL_info_data['countyFIPS'] == 17091]
+```
+
+```{r}
+dem.name<-c("PopulationEstimate2018","PopTotalMale2017","PopTotalFemale2017",
+            "PopulationEstimate65.2017","PopulationDensityperSqMile2010",
+            "CensusPopulation2010","MedianAge2010","dem_to_rep_ratio","PopMale.52010",
+            "PopFmle.52010","PopMale5.92010","PopFmle5.92010","PopMale10.142010",
+            "PopFmle10.142010","PopMale15.192010","PopFmle15.192010","PopMale20.242010",
+            "PopFmle20.242010","PopMale25.292010","PopFmle25.292010","PopMale30.342010",
+            "PopFmle30.342010","PopMale35.442010","PopFmle35.442010","PopMale45.542010",
+            "PopFmle45.542010","PopMale55.592010","PopFmle55.592010","PopMale60.642010",
+            "PopFmle60.642010","PopMale65.742010","PopFmle65.742010","PopMale75.842010",
+            "PopFmle75.842010","PopMale.842010","PopFmle.842010")
+
+med.res.name<-c("X.FTEHospitalTotal2017","TotalM.D..s.TotNon.FedandFed2017",
+                "X.HospParticipatinginNetwork2017","X.Hospitals","X.ICU_beds",
+                "X.EligibleforMedicare2018","MedicareEnrollment.AgedTot2017")
+
+health.rsk.name <- c("DiabetesPercentage","HeartDiseaseMortality",
+                     "StrokeMortality","Smokers_Percentage", "RespMortalityRate2014")
+
+motality.name <- c("X3.YrMortalityAge65.74Years2015.17", "X3.YrMortalityAge75.84Years2015.17","X3.YrMortalityAge85.Years2015.17")
+```
+
+```{r}
+info_cases_data = left_join(rural_data, IL_cases_data, by="countyFIPS") %>%
+  left_join(IL_info_data, by="countyFIPS") %>% 
+  select(countyFIPS, Micropolitan, Central_Outlying, PopulationEstimate2018, contains("#Cases")) 
+
+info_deaths_data = left_join(rural_data, IL_deaths_data, by="countyFIPS") %>%
+  left_join(IL_info_data, by="countyFIPS") %>% 
+  select(countyFIPS, Micropolitan, Central_Outlying, PopulationEstimate2018, contains("#Deaths")) 
+
+info_deaths_data
+```
+
+
+```{r}
+date_x = seq.Date(from = as.Date("2020/01/22",format = "%Y/%m/%d"), by = "day", length.out = 285)
+
+IL_daily_data = tibble(
+  date = date_x,
+  cases = colSums(IL_cases_data[,-1], 1),
+  deaths = colSums(IL_deaths_data[,-1], 1),
+  deaths_ratio = replace_na(colSums(IL_deaths_data[,-1], 1)/colSums(IL_cases_data[,-1], 1)),
+  rural_cases_ratio = colSums(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(PopulationEstimate2018)),
+  
+  rural_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Cases")),1),0),
+  
+  nonrural_cases_ratio = colSums(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(PopulationEstimate2018)),
+  
+  nonrural_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Cases")),1)),
+  
+    central_cases_ratio = colSums(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(PopulationEstimate2018)),
+  
+  central_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Cases")),1)),
+  
+  outlying_cases_ratio = colSums(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(PopulationEstimate2018)),
+  
+  outlying_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Cases")),1),0)
+)
+
+```
+
+```{r}
+plot_ly(IL_daily_data, x = ~date) %>% 
+  add_lines(y = ~cases, name = 'cases', mode = 'lines') %>%
+  layout(title = 'Cumulative Number of Cases in Illinois')
+```
+
+```{r}
+plot_ly(IL_daily_data, x = ~date) %>% 
+  add_lines(y = ~deaths, name = 'cases', mode = 'lines') %>%
+  layout(title = 'Cumulated Number of Deaths in Illinois')
+```
+
+```{r}
+plot_ly(IL_daily_data, x = ~date) %>% 
+  add_lines(y = ~deaths_ratio, name = 'deaths', mode = 'lines') %>%
+  layout(title = 'Cumulated Death Rate in Illinois')
+```
+
+
+```{r}
+plot_ly(IL_daily_data, x = ~date) %>% 
+  # add_lines(y = ~cases, name = 'cases', mode = 'lines') %>%
+  add_trace(y = ~rural_cases_ratio, name = 'rural cases ratio', mode = 'lines') %>% 
+  add_trace(y = ~nonrural_cases_ratio, name = 'nonrural cases ratio', mode = 'lines') %>% 
+  layout(title = 'Cases Ratio in Rural and Nonrural areas in Illinois')
+```
+
+```{r}
+plot_ly(IL_daily_data, x = ~date) %>% 
+  # add_lines(y = ~cases, name = 'cases', mode = 'lines') %>%
+  add_trace(y = ~rural_deaths_ratio, name = 'rural deaths ratio', mode = 'lines') %>% 
+  add_trace(y = ~nonrural_deaths_ratio, name = 'nonrural deaths ratio', mode = 'lines') %>% 
+  layout(title = 'Deaths Ratio in Rural and Nonrural areas in Illinois')
+```
+
+```{r}
+plot_ly(IL_daily_data, x = ~date) %>% 
+  # add_lines(y = ~cases, name = 'cases', mode = 'lines') %>%
+  add_trace(y = ~central_cases_ratio, name = 'central cases ratio', mode = 'lines') %>% 
+  add_trace(y = ~outlying_cases_ratio, name = 'outlying cases ratio', mode = 'lines') %>% 
+  layout(title = 'Cases Ratio in Central and Outlying areas in Illinois')
+```
+
+```{r}
+plot_ly(IL_daily_data, x = ~date) %>% 
+  # add_lines(y = ~cases, name = 'cases', mode = 'lines') %>%
+  add_trace(y = ~central_deaths_ratio, name = 'central deaths ratio', mode = 'lines') %>% 
+  add_trace(y = ~outlying_deaths_ratio, name = 'outlying deaths ratio', mode = 'lines') %>% 
+  layout(title = 'Deaths Ratio in Central and Outlying areas in Illinois')
+```
+
+```{r}
+IL_phrases_cases_data = IL_cases_data[c("countyFIPS","#Cases_03-20-2020", "#Cases_05-30-2020", "#Cases_06-30-2020", "#Cases_11-01-2020")]
+colnames(IL_phrases_cases_data) = c("countyFIPS", "cases1","cases2","cases3","cases4")
+IL_phrases_cases_data
+write.csv(IL_phrases_cases_data,"data/IL_phrases_cases_data.csv")
+```
+
+

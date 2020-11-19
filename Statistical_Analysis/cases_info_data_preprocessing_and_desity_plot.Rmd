@@ -1,0 +1,346 @@
+---
+title: "cases_info_by_ct"
+author: "Yuqi_Zhang"
+date: "10/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(plotly)
+```
+
+```{r}
+ct_info_data = read.csv("data/ct_info_df.csv") %>% 
+  rename(countyFIPS= FIPS)
+IL_cases_data = read.csv("data/IL_cases_data.csv")
+ct_income_data = read.csv("data/ct_income_data.csv")
+
+# ct_income_data = read.csv("data/IL_cases_data.csv")
+ct_info_data
+IL_cases_data
+```
+
+```{r}
+IL_phrases_cases_data = IL_cases_data[c("countyFIPS","X.Cases_03.20.2020", "X.Cases_05.30.2020", "X.Cases_06.30.2020", "X.Cases_11.01.2020")]
+colnames(IL_phrases_cases_data) = c("countyFIPS", "cases1","cases2","cases3","cases4")
+IL_phrases_cases_data
+write.csv(IL_phrases_cases_data,"data/IL_phrases_cases_data.csv")
+```
+
+```{r}
+exposure_data = read_csv("data/exposure_df.csv")
+exposure_data
+```
+
+
+```{r}
+ct_info_cases_data = ct_info_data %>% 
+  left_join(IL_phrases_cases_data, by = "countyFIPS") %>% 
+  left_join(ct_income_data, by = "GEOID") %>% 
+  left_join(exposure_data, by = "GEOID")
+
+ct_info_cases_data = ct_info_data %>% 
+  left_join(IL_phrases_cases_data, by = "countyFIPS") %>% 
+  left_join(ct_income_data, by = "GEOID")%>% 
+  left_join(exposure_data, by = "GEOID") %>% 
+  left_join(ct_info_cases_data %>% 
+            group_by(countyFIPS) %>% 
+            summarise(county_pop = sum(POPULATION)), by="countyFIPS") %>% 
+  mutate(estimate_cases1 = cases1*POPULATION/county_pop,
+         estimate_cases2 = cases2*POPULATION/county_pop,
+         estimate_cases3 = cases3*POPULATION/county_pop,
+         estimate_cases4 = cases4*POPULATION/county_pop,
+         estimate_cases1_density = estimate_cases1/POPULATION,
+         estimate_cases2_density = estimate_cases2/POPULATION,
+         estimate_cases3_density = estimate_cases3/POPULATION,
+         estimate_cases4_density = estimate_cases4/POPULATION,
+         pop_density_class = as_factor(case_when(
+                             POPULATION < quantile(POPULATION,0.25) ~ "1",
+                             POPULATION >= quantile(POPULATION,0.25) &  POPULATION < quantile(POPULATION,0.5) ~ "2",
+                             POPULATION >= quantile(POPULATION,0.5) &  POPULATION < quantile(POPULATION,0.75) ~ "3",
+                             POPULATION >= quantile(POPULATION,0.75) ~ "4",
+                             )),
+         income_class = as_factor(case_when(
+                             income < quantile(income,0.25) ~ "1",
+                             income >= quantile(income,0.25) &  income < quantile(income,0.5) ~ "2",
+                             income >= quantile(income,0.5) &  income < quantile(income, 0.75) ~ "3",
+                             income >= quantile(income,0.75) ~ "4",
+                             ))
+         )
+ct_info_cases_data
+```
+
+```{r}
+mean(ct_info_cases_data$income > 15597391)
+```
+
+```{r}
+write.csv(ct_info_cases_data,"data/ct_info_cases_data.csv")
+```
+
+
+```{r}
+p01 = ct_info_cases_data%>% 
+  ggplot(aes(x = exposure4, col = pop_density_class)) + 
+  geom_density()
+
+p02 = ct_info_cases_data %>% 
+  ggplot(aes(x = exposure4, col = income_class)) + 
+  geom_density()
+
+gridExtra::grid.arrange(p01, p02, ncol = 1)
+```
+```{r}
+p01 = ct_info_cases_data%>% 
+  ggplot(aes(x = estimate_cases4_density, col = pop_density_class)) + 
+  geom_density()
+
+p02 = ct_info_cases_data %>% 
+  ggplot(aes(x = estimate_cases4_density, col = income_class)) + 
+  geom_density()
+
+gridExtra::grid.arrange(p01, p02, ncol = 1)
+```
+```{r}
+p1 = ggplot(ct_info_cases_data) +
+  aes(x = exposure1, fill = income_class, colour = income_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Blues") +
+  scale_color_brewer(palette = "Blues") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6) +
+  labs(x = "Phase 1: Rapid Spread", y = "", caption = "") +
+  xlim(-0.005, 0.02)
+
+p2 = ggplot(ct_info_cases_data) +
+  aes(x = exposure2, fill = income_class, colour = income_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Blues") +
+  scale_color_brewer(palette = "Blues") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6) +
+  labs(x = "Phase 2: Flattening", y = "", caption = "") +
+  xlim(-0.005, 0.02)
+
+p3 = ggplot(ct_info_cases_data) +
+  aes(x = exposure3, fill = income_class, colour = income_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Blues") +
+  scale_color_brewer(palette = "Blues") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6) +
+  labs(x = "Phase 3: Recovery", y = "", caption = "") +
+  xlim(-0.005, 0.02) 
+
+p4 = ggplot(ct_info_cases_data) +
+  aes(x = exposure4, fill = income_class, colour = income_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Blues") +
+  scale_color_brewer(palette = "Blues") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6) +
+  labs(x = "Phase 4: Revitalization", y = "", caption = "") +
+  xlim(-0.005, 0.02)
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, left = "Exposure Entropy Density")
+```
+
+```{r warning=FALSE}
+p1 = ggplot(ct_info_cases_data) +
+  aes(x = exposure1, fill = pop_density_class, colour = pop_density_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Greens") +
+  scale_color_brewer(palette = "Greens") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6, axis.text.x = element_text(angle = 45,hjust = 1)) +
+  labs(x = "Phase 1: Rapid Spread", y = "", caption = "") +
+  xlim(-0.005, 0.02)
+
+p2 = ggplot(ct_info_cases_data) +
+  aes(x = exposure2, fill = pop_density_class, colour = pop_density_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Greens") +
+  scale_color_brewer(palette = "Greens") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6, axis.text.x = element_text(angle = 45,hjust = 1)) +
+  labs(x = "Phase 2: Flattening", y = "", caption = "") +
+  xlim(-0.005, 0.02)
+
+p3 = ggplot(ct_info_cases_data) +
+  aes(x = exposure3, fill = pop_density_class, colour = pop_density_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Greens") +
+  scale_color_brewer(palette = "Greens") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6, axis.text.x = element_text(angle = 45,hjust = 1)) +
+  labs(x = "Phase 3: Recovery", y = "", caption = "") +
+  xlim(-0.005, 0.02)
+
+p4 = ggplot(ct_info_cases_data) +
+  aes(x = exposure4, fill = pop_density_class, colour = pop_density_class) +
+  geom_density(adjust = 3, alpha = 0.7) +
+  scale_fill_brewer(palette = "Greens") +
+  scale_color_brewer(palette = "Greens") +
+  theme_classic() +
+  theme(aspect.ratio = 0.6, axis.text.x = element_text(angle = 45,hjust = 1)) +
+   labs(x = "Phase 4: Revitalization", y = "", caption = "") +
+  xlim(-0.005, 0.02)
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2, left = "Exposure Entropy Density")
+```
+
+
+```{r}
+p1 = ggplot(ct_info_cases_data) +
+ aes(x = "", y = estimate_cases1_density, fill = income_class, colour = income_class) +
+ geom_violin(adjust = 1L, scale = "area") +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 1: Rapid Spread", y = "Estimate Cases Density", caption = "") +
+ theme_classic() 
+
+p2 = ggplot(ct_info_cases_data) +
+ aes(x = "", y = estimate_cases2_density, fill = income_class, colour = income_class) +
+ geom_violin(adjust = 1L, scale = "area") +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 2: Flattening", y = "", caption = "") +
+ theme_classic() 
+
+p3 = ggplot(ct_info_cases_data) +
+ aes(x = "", y = estimate_cases3_density, fill = income_class, colour = income_class) +
+ geom_violin(adjust = 1L, scale = "area") +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 3: Recovery", y = "", caption = "") +
+ theme_classic() 
+
+p4 = ggplot(ct_info_cases_data) +
+ aes(x = "", y = estimate_cases4_density, fill = income_class, colour = income_class) +
+ geom_violin(adjust = 1L, scale = "area") +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 4: Revitalization", y = "", caption = "") +
+ theme_classic() 
+  
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2)
+```
+
+```{r}
+library(ggplot2)
+
+p1 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases1_density, fill = income_class, colour = income_class) +
+ geom_density(adjust = 1L, alpha = 0.7) +
+ scale_fill_brewer(palette = "Purples") +
+ scale_color_brewer(palette = "Purples") +
+ labs(x = "Phase 1: Rapid Spread", y = "", caption = "") +
+ theme_classic() +
+ theme(aspect.ratio = 0.6) +
+ xlim(-4.5e-05, 0.00012)
+
+p2 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases2_density, fill = income_class, colour = income_class) +
+ geom_density(adjust = 1L, alpha = 0.7) +
+ scale_fill_brewer(palette = "Purples") +
+ scale_color_brewer(palette = "Purples") +
+ labs(x = "Phase 2: Flattening", y = "", caption = "") +
+ theme_classic() +
+ theme(aspect.ratio = 0.6) +
+ xlim(-0.005, 0.024)
+
+
+p3 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases3_density, fill = income_class, colour = income_class) +
+ geom_density(adjust = 1L, alpha = 0.7) +
+ scale_fill_brewer(palette = "Purples") +
+ scale_color_brewer(palette = "Purples") +
+ labs(x = "Phase 3: Recovery", y = "", caption = "") +
+ theme_classic() +
+ theme(aspect.ratio = 0.6) +
+ xlim(-0.005, 0.024)
+
+p4 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases4_density, fill = income_class, colour = income_class) +
+ geom_density(adjust = 1L,alpha = 0.7) +
+ scale_fill_brewer(palette = "Purples") +
+ scale_color_brewer(palette = "Purples") +
+ labs(x = "Phase 4: Revitalization", y = "") +
+ theme_classic() +
+  theme(aspect.ratio = 0.6) +
+ xlim(0.012, 0.045)
+
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2,
+                        top="", left="Estimate Cases Density")
+
+# grid.arrange(grobs = gs, layout_matrix = lay)
+```
+
+
+
+```{r}
+ggplot(ct_info_cases_data) +
+ aes(x = "", y = exposure4, fill = income_class, colour = income_class) +
+ geom_violin(adjust = 1L, scale = "area") +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "PHASE 1: Rapid Spread", y = "Estimate Cases Density", caption = "title") +
+ theme_minimal()
+```
+
+```{r}
+library(ggplot2)
+
+p1 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases1_density, fill = pop_density_class, colour = pop_density_class) +
+ geom_density(adjust = 1L, alpha = 0.7) +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 1: Rapid Spread", y = "", caption = "") +
+ theme_classic() +
+ theme(aspect.ratio = 0.6) +
+ xlim(-4.5e-05, 0.00012)
+
+p2 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases2_density, fill = pop_density_class, colour = pop_density_class) +
+ geom_density(adjust = 1L, alpha = 0.7) +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 2: Flattening", y = "", caption = "") +
+ theme_classic() +
+ theme(aspect.ratio = 0.6) +
+ xlim(-0.005, 0.024)
+
+
+p3 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases3_density, fill = pop_density_class, colour = pop_density_class) +
+ geom_density(adjust = 1L, alpha = 0.7) +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 3: Recovery", y = "", caption = "") +
+ theme_classic() +
+ theme(aspect.ratio = 0.6) +
+ xlim(-0.005, 0.024)
+
+p4 = ggplot(ct_info_cases_data) +
+ aes(x = estimate_cases4_density, fill = pop_density_class, colour = pop_density_class) +
+ geom_density(adjust = 1L,alpha = 0.7) +
+ scale_fill_brewer(palette = "Oranges") +
+ scale_color_brewer(palette = "Oranges") +
+ labs(x = "Phase 4: Revitalization", y = "") +
+ theme_classic() +
+  theme(aspect.ratio = 0.6) +
+ xlim(0.012, 0.045)
+
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2,
+                        top="", left="Estimate Cases Density")
+```
+
