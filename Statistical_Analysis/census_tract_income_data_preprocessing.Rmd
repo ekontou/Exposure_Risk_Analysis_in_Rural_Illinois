@@ -21,27 +21,50 @@ ct_income_data = ct_income_data %>%
   mutate_all(~ replace(., . =="-" , 0))
 ct_income_data
 ```
+
 ```{r}
 ct_income_percent = ct_income_data %>% 
   select(contains("percent")) %>% 
   mutate_all(as.numeric) %>% 
   mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))})
+
 ct_income_income = ct_income_data %>% 
   select(contains("income")) %>% 
   mutate_all(as.numeric) %>% 
   mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))})
 ```
 
-
 ```{r}
-income_list = rowSums(as.matrix(ct_income_percent) * as.matrix(ct_income_income))
+income_list = rowSums(as.matrix(ct_income_percent) * as.matrix(ct_income_income))/100
 ```
 
 ```{r}
 ct_income_total_data = tibble(GEOID = ct_income_data$GEOID,income = income_list)
 ct_income_total_data 
+summary(ct_income_total_data)
 ```
+
 ```{r}
 write_csv(ct_income_total_data, "data/ct_income_data.csv") 
+```
+
+```{r}
+ct_income_level = ct_income_income %>% gather("income_family_size", "income")
+
+ggplot(ct_income_level) +
+  aes(x = "", y = income, color = income_family_size) +
+  stat_boxplot(geom = 'errorbar') +
+  geom_boxplot() +
+  scale_fill_hue() +
+  labs(x = "", y = "income: $") +
+  theme_minimal()
+
+```
+
+```{r}
+for (i in 1:ncol(ct_income_income)){
+  col = ct_income_income[,i]
+  print(summary(col))
+}
 ```
 

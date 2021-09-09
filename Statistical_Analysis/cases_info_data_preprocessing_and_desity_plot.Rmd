@@ -18,6 +18,7 @@ library(plotly)
 ct_info_data = read.csv("data/ct_info_df.csv") %>% 
   rename(countyFIPS= FIPS)
 IL_cases_data = read.csv("data/IL_cases_data.csv")
+IL_deaths_data = read.csv("data/IL_deaths_data.csv")
 ct_income_data = read.csv("data/ct_income_data.csv")
 
 # ct_income_data = read.csv("data/IL_cases_data.csv")
@@ -30,23 +31,45 @@ IL_phrases_cases_data = IL_cases_data[c("countyFIPS","X.Cases_03.20.2020", "X.Ca
 colnames(IL_phrases_cases_data) = c("countyFIPS", "cases1","cases2","cases3","cases4")
 IL_phrases_cases_data
 write.csv(IL_phrases_cases_data,"data/IL_phrases_cases_data.csv")
+
+IL_phrases_deaths_data = IL_deaths_data[c("countyFIPS","X.Deaths_03.20.2020", "X.Deaths_05.30.2020", "X.Deaths_06.30.2020", "X.Deaths_11.01.2020")]
+colnames(IL_phrases_deaths_data) = c("countyFIPS", "deaths1","deaths2","deaths3","deaths4")
+IL_phrases_deaths_data
+write.csv(IL_phrases_cases_data,"data/IL_phrases_deaths_data.csv")
+
+
+IL_phases_data = IL_phrases_cases_data %>% 
+  left_join( IL_phrases_deaths_data, by = "countyFIPS") %>% 
+  mutate(active_cases1 = cases1 - deaths1,
+         active_cases2 = cases2 - deaths2,
+         active_cases3 = cases3 - deaths3,
+         active_cases4 = cases4 - deaths4) %>% 
+  select(countyFIPS, active_cases1, active_cases2, active_cases3, active_cases4)
+IL_phrases_cases_data = IL_phases_data %>% 
+rename(cases1 = active_cases1,
+       cases2 = active_cases2,
+       cases3 = active_cases3,
+       cases4 = active_cases4)
 ```
 
 ```{r}
-exposure_data = read_csv("data/exposure_df.csv")
-exposure_data
+exposure_data = read.csv("/Users/zhangyuqi/Documents/NCSA/Exposure_Risk_Analysis_in Rural_Illinois/Streetlight_Data/clean_data/dptotal/dptotal_exposure_df.csv")
+# exposure_data = read.csv("../Streetlight_Data/clean_data/exposure_df.csv")
+#exposure_data = read_csv("data/exposure_df.csv")
+exposure_data = exposure_data %>% 
+  rename(GEOID = FIPS)
 ```
 
 
 ```{r}
 ct_info_cases_data = ct_info_data %>% 
   left_join(IL_phrases_cases_data, by = "countyFIPS") %>% 
-  left_join(ct_income_data, by = "GEOID") %>% 
+  left_join(ct_income_data, by = "GEOID")  %>%
   left_join(exposure_data, by = "GEOID")
 
 ct_info_cases_data = ct_info_data %>% 
   left_join(IL_phrases_cases_data, by = "countyFIPS") %>% 
-  left_join(ct_income_data, by = "GEOID")%>% 
+  left_join(ct_income_data, by = "GEOID") %>% 
   left_join(exposure_data, by = "GEOID") %>% 
   left_join(ct_info_cases_data %>% 
             group_by(countyFIPS) %>% 
@@ -55,10 +78,10 @@ ct_info_cases_data = ct_info_data %>%
          estimate_cases2 = cases2*POPULATION/county_pop,
          estimate_cases3 = cases3*POPULATION/county_pop,
          estimate_cases4 = cases4*POPULATION/county_pop,
-         estimate_cases1_density = estimate_cases1/POPULATION,
-         estimate_cases2_density = estimate_cases2/POPULATION,
-         estimate_cases3_density = estimate_cases3/POPULATION,
-         estimate_cases4_density = estimate_cases4/POPULATION,
+         estimate_cases1_density = estimate_cases1/Shape_Area,
+         estimate_cases2_density = estimate_cases2/Shape_Area,
+         estimate_cases3_density = estimate_cases3/Shape_Area,
+         estimate_cases4_density = estimate_cases4/Shape_Area,
          pop_density_class = as_factor(case_when(
                              POPULATION < quantile(POPULATION,0.25) ~ "1",
                              POPULATION >= quantile(POPULATION,0.25) &  POPULATION < quantile(POPULATION,0.5) ~ "2",
@@ -72,7 +95,10 @@ ct_info_cases_data = ct_info_data %>%
                              income >= quantile(income,0.75) ~ "4",
                              ))
          )
-ct_info_cases_data
+
+# extimated_cases4: replace missing value with 0
+miss_idx = is.na(ct_info_cases_data$estimate_cases4)
+ct_info_cases_data$estimate_cases4[miss_idx] = 0
 ```
 
 ```{r}
@@ -106,6 +132,7 @@ p02 = ct_info_cases_data %>%
 
 gridExtra::grid.arrange(p01, p02, ncol = 1)
 ```
+
 ```{r}
 p1 = ggplot(ct_info_cases_data) +
   aes(x = exposure1, fill = income_class, colour = income_class) +

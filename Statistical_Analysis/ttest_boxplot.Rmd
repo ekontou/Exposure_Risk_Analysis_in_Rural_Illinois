@@ -20,6 +20,7 @@ ct_info_cases_data = read_csv("data/ct_info_cases_data.csv")
 ```{r}
 ct_info_cases_data
 ```
+
 ```{r}
 table = matrix(nrow=4,ncol=4)
 for (i in 1:4){
@@ -119,7 +120,6 @@ ggplot(ct_info_cases_data) +
 ```
 
 ```{r}
-
 library(dplyr)
 library(ggplot2)
 
@@ -129,8 +129,6 @@ ct_info_cases_data %>%
  aes(x = "", y = exposure1) +
  geom_boxplot(fill = "#0c4c8a") +
  theme_minimal()
-
-
 ```
 
 ```{r}
@@ -143,5 +141,223 @@ quantile(logtrns(ct_info_cases_data$exposure1),probs=interval)
 quantile(logtrns(ct_info_cases_data$exposure2),probs=interval)
 quantile(logtrns(ct_info_cases_data$exposure3),probs=interval)
 quantile(logtrns(ct_info_cases_data$exposure4),probs=interval,na.rm = TRUE)
+```
+
+------------------------------------------------------------------------------------
+
+```{r}
+rural_exposure = ct_info_cases_data %>% 
+  filter(income_class == 4) %>% 
+  filter(pop_density_class %in% c(1,2)) %>%
+  select(exposure4) 
+
+urban_exposure = ct_info_cases_data %>% 
+  filter(income_class == 4) %>% 
+  filter(pop_density_class %in% c(3,4)) %>%
+  select(exposure4) 
+
+t.test(rural_exposure, urban_exposure, alternative = "less")[["p.value"]]
+# income_class
+# pop_density_class
+```
+
+```{r}
+rural_cases = ct_info_cases_data %>% 
+  filter(income_class == 4) %>% 
+  filter(pop_density_class %in% c(1,2)) %>%
+  select(estimate_cases4_density) 
+
+urban_cases = ct_info_cases_data %>% 
+  filter(income_class == 4) %>% 
+  filter(pop_density_class %in% c(3,4)) %>%
+  select(estimate_cases4_density) 
+
+t.test(rural_cases, urban_cases, alternative = "less")[["p.value"]]
+# income_class
+# pop_density_class
+```
+
+In both urban and rural area, people with less income has less exposure risk to COVID-19. Generally, urban population has higher exposure entropy than those in the rural area.
+
+```{r}
+# # RU_plot_vector = c("boxplot_rural", "boxplot_urban")
+# RU_plot_vector = c(paste0("RU_boxplot", 1:2))
+# RU_group_vector = c(c(1,2),c(3,4))
+# xlab_vector = c("Rural Area", "Urban Area")
+# ylab_vector = c("", "")
+# for (i in 1:2){
+#   RU_group = c(2*i-1, 2*i)
+#   xlab = xlab_vector[i]
+#   ylab = ylab_vector[i]
+#   # median = median(ct_info_cases_data[ct_info_cases_data$exposure4 >= 0  & ct_info_cases_data$exposure4 <= 0.1 & ct_info_cases_data$pop_density_class %in% c(1,2),]$exposure4, na.rm = TRUE)
+#   median = median(c(ct_info_cases_data %>%
+#    filter(pop_density_class %in% c(2*i-1, 2*i)) %>% # urban area
+#    filter(exposure4 >= 0  | is.na(exposure4)) %>% 
+#     select(exposure4))[[1]],na.rm = TRUE)
+#   RU_plot = ct_info_cases_data %>%
+#    filter(pop_density_class %in% RU_group) %>% # urban area
+#    filter(exposure4 >= 0 | is.na(exposure4)) %>%
+#    ggplot() +
+#    aes(x = "", y = exposure4, group = income_class) +
+#    geom_boxplot() +
+#     geom_hline(aes(yintercept = median(c(ct_info_cases_data %>%
+#    filter(pop_density_class %in% RU_group) %>% # urban area
+#    filter(exposure4 >= 0  | is.na(exposure4)) %>% 
+#     select(exposure4))[[1]],na.rm = TRUE)), col = "#990000", linetype = 5, show.legend = FALSE) +
+#    coord_cartesian(ylim = c(0,0.015)) +
+#   # scale_color_grey(start=0.8, end=0.2)+
+#   # scale_fill_distiller(palette = "Blues" ,direction = 1) +
+#    labs(x = xlab, y = ylab) + 
+#    theme_classic() +
+#    theme(aspect.ratio = 5) +
+#    facet_grid(vars(), vars(income_class))
+#   
+#    assign(RU_plot_vector[i], RU_plot)
+# }
+# p = gridExtra::grid.arrange(RU_boxplot1, RU_boxplot2, ncol = 2,
+#                         left = "Exposure Entropy",
+#                         top = "Note: income class 1,2,3,4 stands for bottom 25% to the top 25% respectfully") 
+# ggsave( "mtcars.png", plot = p)
+```
+
+```{r}
+median1 = median(c(ct_info_cases_data %>%
+   filter(pop_density_class %in% c(1,2)) %>% # urban area
+   filter(exposure2 >= 0  | is.na(exposure2)) %>% 
+    select(exposure2))[[1]],na.rm = TRUE)
+RU_boxplot1 = ct_info_cases_data %>%
+   filter(pop_density_class %in% c(1,2)) %>% # urban area
+   filter(exposure2 >= 0 | is.na(exposure2)) %>%
+   ggplot() +
+   aes(x = "", y = exposure2, group = income_class) +
+   geom_boxplot() +
+    geom_hline(aes(yintercept = median1), col = "#990000", linetype = 5, show.legend = FALSE) +
+   coord_cartesian(ylim = c(0,0.005)) +
+  # scale_color_grey(start=0.8, end=0.2)+
+  # scale_fill_distiller(palette = "Blues" ,direction = 1) +
+   labs(x = "Rural Area", y = "") + 
+   theme_classic() +
+   theme(aspect.ratio = 5) +
+   facet_grid(vars(), vars(income_class))
+
+median2 = median(c(ct_info_cases_data %>%
+   filter(pop_density_class %in% c(3,4)) %>% # urban area
+   filter(exposure2 >= 0  | is.na(exposure2)) %>% 
+    select(exposure2))[[1]],na.rm = TRUE)
+RU_boxplot2 = ct_info_cases_data %>%
+   filter(pop_density_class %in% c(3,4)) %>% # urban area
+   filter(exposure2 >= 0 | is.na(exposure2)) %>%
+   ggplot() +
+   aes(x = "", y = exposure2, group = income_class) +
+   geom_boxplot() +
+    geom_hline(aes(yintercept = median2), col = "#990000", linetype = 5, show.legend = FALSE) +
+   coord_cartesian(ylim = c(0,0.010)) +
+  # scale_color_grey(start=0.8, end=0.2)+
+  # scale_fill_distiller(palette = "Blues" ,direction = 1) +
+   labs(x = "Urban Area", y = "") + 
+   theme_classic() +
+   theme(aspect.ratio = 5) +
+   facet_grid(vars(), vars(income_class))
+
+p = gridExtra::grid.arrange(RU_boxplot1, RU_boxplot2, ncol = 2,
+                        left = "Exposure Entropy",
+                        top = "COVID-19 Exposure Entropy during Phase 2 in Rural and Urban Illinois") 
+ggsave( "/Users/zhangyuqi/Desktop/COVID-19 Exposure Entropy during Phase 2 in Rural and Urban Illinois.png", plot = p)
+```
+
+
+In urban area, the bottom 50% income population suffer a significant higher cases density than those top 50% income people. In rural area, the top 25% income group and bottom 25% income group has significantly higher cases density than the middle 2 group.
+
+```{r}
+# rural area
+RU_boxplot1 = ct_info_cases_data %>% 
+filter(pop_density_class %in% c(1,2)) %>% # urban area
+ggplot() +
+ aes(x = "", y = estimate_cases4_density, color=, group = income_class) +
+ geom_boxplot() +
+ coord_cartesian(ylim = c(0, 6*10^6)) +
+ geom_hline(aes(yintercept = median(c(ct_info_cases_data %>% 
+filter(pop_density_class %in% c(1,2)) %>% select(estimate_cases4_density))[[1]])
+                  ), col = "#990000", linetype = 5) +
+ labs(x = "Rural Area", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(income_class))
+
+
+# urban area
+RU_boxplot2 = ct_info_cases_data %>% 
+filter(pop_density_class %in% c(3,4)) %>% # urban area
+ggplot() +
+ aes(x = "", y = estimate_cases4_density, color=, group = income_class) +
+ geom_boxplot() +
+coord_cartesian(ylim = c(0, 15*10^6)) +
+ geom_hline(aes(yintercept = median(c(ct_info_cases_data %>% filter(pop_density_class %in% c(3,4)) %>% select(estimate_cases4_density))[[1]],na.rm = TRUE)
+                  ), col = "#990000", linetype = 5) +
+ labs(x = "Urban Area", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(income_class))
+
+p = gridExtra::grid.arrange(RU_boxplot1, RU_boxplot2, ncol = 2,
+                        left = "Cumulative Case Number",
+                        top = "COVID-19 Cumulative Case Number at the End of Phase 4 in Rural and Urban Illinois")
+p = ggsave( "/Users/zhangyuqi/Desktop/COVID-19 Cumulative Case Number at the End of Phase 4 in Rural and Urban Illinois.png", plot = p)
+```
+
+```{r}
+table = matrix(nrow=4,ncol=4)
+for (i in 1:4){
+x = ct_info_cases_data %>% 
+  filter(income_class == i) %>% 
+  filter(pop_density_class %in% c(1,2)) %>%
+  select(estimate_cases4_density) %>% 
+  mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))}) %>% 
+    unlist(use.names = FALSE)
+for (j in 1:4){
+y = ct_info_cases_data %>% 
+  filter(income_class == j) %>%
+  filter(pop_density_class %in% c(1,2)) %>%
+  select(estimate_cases4_density) %>% 
+  mutate_if(is.numeric, function(x){x = replace_na(x, median(x, na.rm = TRUE))}) %>% 
+  unlist(use.names = FALSE)
+table[i,j] = t.test(x, y, alternative = "less")[["p.value"]]
+}}
+table
+```
+
+```{r}
+# RU_plot_vector = c("boxplot_rural", "boxplot_urban")
+RU_plot_vector = c(paste0("RU_boxplot", 1:2))
+RU_group_vector = c(c(1,2),c(3,4))
+xlab_vector = c("Rural Area", "Urban Area")
+ylab_vector = c("", "")
+for (i in 1:2){
+  RU_group = RU_group_vector[i]
+  xlab = xlab_vector[i]
+  ylab = ylab_vector[i]
+  median = 0.00150
+  
+  RU_plot = ct_info_cases_data %>%
+   filter(pop_density_class %in% RU_group) %>% # urban area
+   filter(exposure1 >= 0 & exposure1<= 0.02 | is.na(exposure1)) %>%
+   ggplot() +
+   aes(x = "", y = exposure1, group = income_class) +
+   geom_boxplot() +
+    geom_hline(aes(yintercept = median), col = "#990000", linetype = 5, show.legend = FALSE) +
+   coord_cartesian(ylim = c(0,0.007)) +
+  # scale_color_grey(start=0.8, end=0.2)+
+  # scale_fill_distiller(palette = "Blues" ,direction = 1) +
+   labs(x = xlab, y = ylab) + 
+   theme_classic() +
+   theme(aspect.ratio = 5) +
+   facet_grid(vars(), vars(income_class))
+  
+   assign(RU_plot_vector[i], RU_plot)
+}
+p = gridExtra::grid.arrange(get(RU_plot_vector,1), RU_boxplot2, ncol = 2,
+                        left = "Exposure Entropy",
+                        top = "Note: income class 1,2,3,4 stands for bottom 25% to the top 25% respectfully") 
+ggsave( "mtcars.png", plot = p)
 ```
 

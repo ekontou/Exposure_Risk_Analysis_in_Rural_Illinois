@@ -1,0 +1,36 @@
+---
+title: "network_results"
+author: "Yuqi_Zhang"
+date: "7/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+ct_info_cases_data = read_csv("ct_info_cases_data.csv")
+```
+
+```{r}
+ct_info_cases_data
+```
+```{r}
+ct_info_cases_data %>% 
+  select ("GEOID", "countyFIPS", "POPULATION", "POP_DENSITY", "pop_density_class", "income", "income_class", "No..Hospitals") %>% 
+  filter(GEOID %in% in_cen_1234)
+#                        County Seat:       District: 
+# 17031 Cook County 	     Chicago,       	Township  
+# 17197 Will County        Joliet,        	Executive
+
+# 17093 Kendall County     Yorkville,       Township
+# 17089 Kane County        Geneva,          Township
+# 17043 Cumberland County  Toledo,          Township
+in_cen_1234 = c(17031839100,17031980000,17031320100,17031081800,17031836200,17197883522,17031320400,17031081401,17031804603,17031281900, 17043844601, 17031081500)
+out_cen_123 = c(17043841703, 17089850701, 17031330100, 17093890700, 17093890400, 17031320100, 17031804507,17093890101, 17043846310, 17031803608)
+out_cen_4 = c(17043841703,17089850701,17093890700,17093890400,17031320100,17093890101,17043846310,17031803608,17043846411,17031806002)
+out_cen_1234 = c(17043841703, 17089850701, 17031330100, 17093890700, 17093890400, 17031320100, 17031804507,17093890101, 17043846310, 17031803608,17043846411,17031806002)
+```
+

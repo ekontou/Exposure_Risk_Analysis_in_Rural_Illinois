@@ -1,0 +1,93 @@
+---
+title: "Untitled"
+author: "Yuqi_Zhang"
+date: "2/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+streetlight_data_raw = read.csv("/Users/zhangyuqi/Downloads/179760_Illinois_COVID_19_Phase_1_v2_od_all.csv")
+streetlight_data_raw
+```
+
+```{r}
+streetlight_data = streetlight_data_raw %>% 
+  filter(Day.Part == '0: All Day (12am-12am)',
+         Day.Type == '0: All Days (M-Su)') %>% 
+  rename(county_name = Origin.Zone.Name) %>%
+  select(Origin.Zone.ID, Destination.Zone.ID,
+         Average.Daily.O.D.Traffic..StL.Volume.) %>%
+  arrange(desc(Average.Daily.O.D.Traffic..StL.Volume.)) %>% 
+  rename(Origin.Zone.ID = Origin.Zone.ID,
+         Destination.ID = Destination.Zone.ID,
+         Traffic.V = Average.Daily.O.D.Traffic..StL.Volume. )
+streetlight_data
+```
+
+```{r}
+write.csv(streetlight_data, "streetlight_data.csv")
+```
+
+```{r}
+unique(streetlight_data$Origin.Zone.ID)
+```
+
+
+```{r}
+county_fips = read.csv("/Users/zhangyuqi/Documents/NCSA/Exposure_Risk_Analysis_in Rural_Illinois/Streetlight_Data/county_fips.csv")
+for (i in 1:nrow(county_fips["county_name"])){
+  county_fips[i, "county_name"] = toupper(county_fips[i, "county_name"])
+}
+```
+
+```{r}
+streetlight_county_data = left_join(streetlight_data, county_fips, by = "county_name")
+```
+
+for county 01: calc the total origin trips $n$
+   for county first 01 in the double dictinoary: $/n$
+       for each county second in the double dictinoary: $* number of trips$
+
+```{r}
+# number of trips from origin county 01
+sum (streetlight_county_data %>%
+  filter(Origin.Zone.ID == 1) %>%
+  select( Average.Daily.O.D.Traffic..StL.Volume.))
+```
+```{r}
+streetlight_county_data %>%
+  filter(Origin.Zone.ID == 1,
+         # Destination.Zone.ID == 1
+         ) %>%
+  select( Destination.Zone.ID,
+          Average.Daily.O.D.Traffic..StL.Volume.)
+```
+
+
+```{r}
+risk_flow_matrix4 = read.csv("/Users/zhangyuqi/Documents/NCSA/Exposure_Risk_Analysis_in Rural_Illinois/risk_flow_matrix4.csv")
+risk_flow_matrix4
+```
+
+```{r}
+risk_flow_matrix4 %>%
+  filter(GEOID >= 17001000000 & GEOID <= 17002000000)
+```
+
+
+Data preprocesing (street light data):
+1. use shape files and county & census tracts ID to figure out the geo relationship
+2. start with one county (e.g. county 1), and see how to update the origin-dest matrix for the analysis)
+
+Plots:
+1. modification to the plots in data sections
+2. make some plots about the Street light data if needed
+rnorm(100,0,1)

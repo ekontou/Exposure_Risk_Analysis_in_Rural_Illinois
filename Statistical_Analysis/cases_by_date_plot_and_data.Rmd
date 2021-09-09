@@ -30,7 +30,7 @@ write.csv(rural_data, "../../dataset/rural_data.csv")
 ```
 
 ```{r}
-usa_data = read_csv("../Statistical_Analysis/usafacts_infections.csv")
+usa_data = read_csv("raw_data/usafacts_infections.csv")
 IL_cases_data = usa_data %>% 
   filter(substr(countyFIPS,1,2) == "17") %>% 
   select(countyFIPS,contains("#Cases"))
@@ -41,7 +41,7 @@ IL_cases_data
 write_csv(IL_cases_data,"data/IL_cases_data.csv")
 ```
 ```{r}
-county_info_data = read_csv("county_data_nona.csv")
+county_info_data = read_csv("raw_data/county_data_nona.csv")
 IL_info_data = county_info_data %>%
   filter(StateName == "IL") %>% 
   mutate(countyFIPS = as.character(countyFIPS)) %>% 
@@ -92,35 +92,88 @@ IL_daily_data = tibble(
   cases = colSums(IL_cases_data[,-1], 1),
   deaths = colSums(IL_deaths_data[,-1], 1),
   deaths_ratio = replace_na(colSums(IL_deaths_data[,-1], 1)/colSums(IL_cases_data[,-1], 1)),
-  rural_cases_ratio = colSums(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(PopulationEstimate2018)),
+  # rural_cases_ratio = colSums(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(PopulationEstimate2018)),
+  # 
+  # rural_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Cases")),1),0),
   
-  rural_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Micropolitan == TRUE) %>% select(contains("#Cases")),1),0),
-  
-  nonrural_cases_ratio = colSums(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(PopulationEstimate2018)),
-  
-  nonrural_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Cases")),1)),
-  
-    central_cases_ratio = colSums(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(PopulationEstimate2018)),
-  
-  central_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Cases")),1)),
-  
-  outlying_cases_ratio = colSums(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(PopulationEstimate2018)),
-  
-  outlying_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Cases")),1),0)
+#   nonrural_cases_ratio = colSums(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(PopulationEstimate2018)),
+#   
+#   nonrural_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Micropolitan == FALSE) %>% select(contains("#Cases")),1)),
+#   
+#     central_cases_ratio = colSums(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(PopulationEstimate2018)),
+#   
+#   central_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Central_Outlying == 'Central') %>% select(contains("#Cases")),1)),
+#   
+#   outlying_cases_ratio = colSums(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Cases")),1)/sum(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(PopulationEstimate2018)),
+#   
+#   outlying_deaths_ratio = replace_na(colSums(info_deaths_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Deaths")),1)/colSums(info_cases_data  %>% filter(Central_Outlying == 'Outlying') %>% select(contains("#Cases")),1),0)
 )
-
 ```
 
 ```{r}
+# https://plotly.com/r/basic-charts/
 plot_ly(IL_daily_data, x = ~date) %>% 
   add_lines(y = ~cases, name = 'cases', mode = 'lines') %>%
+   add_markers(
+    x = '2020-03-20',
+    y = as.numeric(IL_daily_data %>% 
+            filter(date == '2020-03-20') %>% 
+            select(cases)),
+    showlegend = FALSE
+  ) %>% 
+  add_markers(
+    x = '2020-05-30',
+    y = as.numeric(IL_daily_data %>% 
+            filter(date == '2020-05-30') %>% 
+            select(cases)),
+    showlegend = FALSE
+  ) %>% 
+  add_markers(
+    x = '2020-06-30',
+    y = as.numeric(IL_daily_data %>% 
+            filter(date == '2020-06-30') %>% 
+            select(cases)),
+    showlegend = FALSE
+  ) %>% 
+  add_text(
+  x = '2020-02-20',
+  y = as.numeric(IL_daily_data %>% 
+        filter(date == '2020-02-20') %>% 
+        select(cases))+30000,
+  text = 'Phase 1',
+  showlegend = FALSE
+) %>% 
+  add_text(
+  x = '2020-04-15',
+  y = as.numeric(IL_daily_data %>% 
+        filter(date == '2020-04-15') %>% 
+        select(cases))+50000,
+  text = 'Phase 2',
+  showlegend = FALSE
+) %>% 
+  add_text(
+  x = '2020-06-15',
+  y = as.numeric(IL_daily_data %>% 
+        filter(date == '2020-06-15') %>% 
+        select(cases))+40000,
+  text = 'Phase 3',
+  showlegend = FALSE
+) %>% 
+  add_text(
+  x = '2020-09-01',
+  y = as.numeric(IL_daily_data %>% 
+        filter(date == '2020-09-01') %>% 
+        select(cases))+70000,
+  text = 'Phase 4',
+  showlegend = FALSE
+) %>% 
   layout(title = 'Cumulative Number of Cases in Illinois')
 ```
 
 ```{r}
 plot_ly(IL_daily_data, x = ~date) %>% 
-  add_lines(y = ~deaths, name = 'cases', mode = 'lines') %>%
-  layout(title = 'Cumulated Number of Deaths in Illinois')
+  add_lines(y = ~deaths, name = 'deaths', mode = 'lines') %>%
+  layout(title = 'Cumulated Number of Deaths in Illinois') 
 ```
 
 ```{r}

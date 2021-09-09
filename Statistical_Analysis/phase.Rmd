@@ -1,0 +1,258 @@
+---
+title: "Untitled"
+author: "Yuqi_Zhang"
+date: "4/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+ct_info_cases_data = read_csv("data/ct_info_cases_data.csv")[,c("GEOID", "countyFIPS", "POPULATION", "POP_DENSITY", "Shape_Area", "estimate_cases1_density", "estimate_cases2_density", "estimate_cases3_density", "estimate_cases4_density", "income", "exposure1", "exposure2", "exposure3", "exposure4", "pop_density_class", "income_class")]
+```
+
+
+```{r}
+mean(ct_info_cases_data$exposure4, na.rm=TRUE)
+?mean
+```
+
+```{r}
+n = nrow(ct_info_cases_data)
+by_phase = matrix(NA, nrow = n*4, ncol = 5)
+by_phase[1:n,1] = ct_info_cases_data$exposure1
+by_phase[1:n,2] = ct_info_cases_data$estimate_cases1_density
+by_phase[1:n,3] = ct_info_cases_data$pop_density_class
+by_phase[1:n,4] = ct_info_cases_data$income_class
+by_phase[1:n,5] = 1
+
+
+by_phase[(n+1):(2*n),1] = ct_info_cases_data$exposure2
+by_phase[(n+1):(2*n),2] = ct_info_cases_data$estimate_cases2_density
+by_phase[(n+1):(2*n),3] = ct_info_cases_data$pop_density_class
+by_phase[(n+1):(2*n),4] = ct_info_cases_data$income_class
+by_phase[(n+1):(2*n),5] = 2
+
+by_phase[(2*n+1):(3*n),1] = ct_info_cases_data$exposure3
+by_phase[(2*n+1):(3*n),2] = ct_info_cases_data$estimate_cases3_density
+by_phase[(2*n+1):(3*n),3] = ct_info_cases_data$pop_density_class
+by_phase[(2*n+1):(3*n),4] = ct_info_cases_data$income_class
+by_phase[(2*n+1):(3*n),5] = 3
+
+by_phase[(3*n+1):(4*n),1] = ct_info_cases_data$exposure4
+by_phase[(3*n+1):(4*n),2] = ct_info_cases_data$estimate_cases4_density
+by_phase[(3*n+1):(4*n),3] = ct_info_cases_data$pop_density_class
+by_phase[(3*n+1):(4*n),4] = ct_info_cases_data$income_class
+by_phase[(3*n+1):(4*n),5] = 4
+
+dataset = data.frame(by_phase)
+colnames(dataset) = c("exposure", "case", "pop_density_class", "income_class","phase")
+
+```
+
+```{r}
+rural = dataset %>%
+ filter(pop_density_class %in% c(1,2),
+        exposure >= 0 & exposure <= 0.01) %>%
+ ggplot() +
+ aes(x = "", y = exposure, group = phase) +
+ geom_boxplot() +
+ labs(x = "Rural Area", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(phase))
+
+urban = dataset %>%
+ filter(pop_density_class %in% c(3,4),
+        exposure >= 0 & exposure <= 0.01) %>%
+ ggplot() +
+ aes(x = "", y = exposure, group = phase) +
+ geom_boxplot() +
+ labs(x = "Urban Area", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(phase))
+
+gridExtra::grid.arrange(rural, urban, ncol = 2,
+                        left = "Exposure Risk",
+                        top = "Note: 1,2,3,4 stands for phase 1 to 4 respectfully")
+dataset %>%
+ filter(exposure >= 0 & exposure <= 0.01) %>%
+ ggplot() +
+ aes(x = "", y = exposure, group = phase) +
+ geom_boxplot() +
+ labs(x = "", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(phase))
+```
+
+
+```{r}
+rural = dataset %>%
+ filter(pop_density_class %in% c(1,2),
+        case >= 0 & case <= 10000
+        ) %>%
+ ggplot() +
+ aes(x = "", y = case, group = phase) +
+ geom_boxplot() +
+ labs(x = "Rural Area", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(phase))+
+    geom_hline(aes(yintercept = 10000), col = "#990000", linetype = 5, show.legend = FALSE) 
+
+urban = dataset %>%
+ filter(pop_density_class %in% c(3,4),
+        case >= 0 & case <= 15000) %>%
+ ggplot() +
+ aes(x = "", y = case, group = phase) +
+ geom_boxplot() +
+ labs(x = "Urban Area", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(phase))+
+      geom_hline(aes(yintercept = 10000), col = "#990000", linetype = 5, show.legend = FALSE) 
+
+gridExtra::grid.arrange(rural, urban, ncol = 2,
+                        left = "Estimate case density",
+                        top = "Note: 1,2,3,4 stands for phase 1 to 4 respectfully")
+
+dataset %>%
+  filter(case >= 0 & case <= 15000) %>% 
+ ggplot() +
+ aes(x = "", y = case, group = phase) +
+ geom_boxplot() +
+ labs(x = "", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 5) +
+ facet_grid(vars(), vars(phase))
+```
+
+```{r}
+income1 = dataset %>%
+ filter(income_class == 1,
+        exposure >= 0 & exposure <= 0.01) %>%
+ ggplot() +
+ aes(x = "", y = exposure, group = phase) +
+ geom_boxplot() +
+ labs(x = "0-25% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+income2 = dataset %>%
+ filter(income_class == 2,
+        exposure >= 0 & exposure <= 0.01) %>%
+ ggplot() +
+ aes(x = "", y = exposure, group = phase) +
+ geom_boxplot() +
+ labs(x = "25-50% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+income3 = dataset %>%
+ filter(income_class == 3,
+        exposure >= 0 & exposure <= 0.01) %>%
+ ggplot() +
+ aes(x = "", y = exposure, group = phase) +
+ geom_boxplot() +
+ labs(x = "50-75% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+income4 = dataset %>%
+ filter(income_class == 4,
+        exposure >= 0 & exposure <= 0.01) %>%
+ ggplot() +
+ aes(x = "", y = exposure, group = phase) +
+ geom_boxplot() +
+ labs(x = "75-100% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+gridExtra::grid.arrange(income1, income2, income3, income4, ncol = 2,
+                        left = "Exposure Risk",
+                        top = "Note: 1,2,3,4 stands for phase 1 to 4 respectfully")
+
+```
+
+```{r}
+income1 = dataset %>%
+ filter(income_class == 1,
+        case >= 0 & case <= 15000)%>%
+ ggplot() +
+ aes(x = "", y = case, group = phase) +
+ geom_boxplot() +
+ labs(x = "0-25% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+income2 = dataset %>%
+ filter(income_class == 2,
+        case >= 0 & case <= 15000)%>%
+ ggplot() +
+ aes(x = "", y = case, group = phase) +
+ geom_boxplot() +
+ labs(x = "25-50% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+income3 = dataset %>%
+ filter(income_class == 3,
+        case >= 0 & case <= 15000) %>%
+ ggplot() +
+ aes(x = "", y = case, group = phase) +
+ geom_boxplot() +
+ labs(x = "50-75% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+income4 = dataset %>%
+ filter(income_class == 4,
+        case >= 0 & case <= 15000) %>%
+ ggplot() +
+ aes(x = "", y = case, group = phase) +
+ geom_boxplot() +
+ labs(x = "75-100% income", y = "") +
+ theme_classic() +
+ theme(aspect.ratio = 2) +
+ facet_grid(vars(), vars(phase))
+
+gridExtra::grid.arrange(income1, income2, income3, income4, ncol = 2,
+                        left = "Estimate case density",
+                        top = "Note: 1,2,3,4 stands for phase 1 to 4 respectfully")
+
+```
+```{r}
+plot(ct_info_cases_data$exposure4, ct_info_cases_data$estimate_cases4_density)
+?plot
+```
+
+```{r}
+income1 = dataset[which(dataset[,"income_class"] == 1), c("case", "exposure")] 
+income2 = dataset[which(dataset[,"income_class"] == 2), c("case", "exposure")] 
+income3 = dataset[which(dataset[,"income_class"] == 3), c("case", "exposure")] 
+income4 = dataset[which(dataset[,"income_class"] == 4), c("case", "exposure")] 
+plot(y=income1$case, x=income1$exposure, col = "darkblue", pch = 18,
+  # xlim = c(-2,2.5), ylim = c(-2,2.5),
+  xlab = "case", ylab = "exposure", )
+points(y=income2$case, x=income2$exposure, col = "lightblue", pch = 18)
+points(y=income3$case, x=income3$exposure, col = "red", pch = 18)
+points(y=income4$case, x=income4$exposure, col = "green", pch = 18)
+legend("topleft",legend = c("1","2", "3","4"), col = c("darkblue", "lightblue", "red", "green"), pch = 18)
+```
+
+
