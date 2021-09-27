@@ -85,7 +85,7 @@ info_deaths_data
 
 
 ```{r}
-date_x = seq.Date(from = as.Date("2020/01/22",format = "%Y/%m/%d"), by = "day", length.out = 285)
+date_x = seq.Date(from = as.Date("2020/01/22",format = "%Y/%m/%d"), by = "day", length.out = 478)
 
 IL_daily_data = tibble(
   date = date_x,
