@@ -15,15 +15,21 @@ library(plotly)
 ```
 
 ```{r}
+GEOID_ALAND = read_csv("/Users/zhangyuqi/Documents/NCSA/Exposure_Risk_Analysis_in Rural_Illinois/Statistical_Analysis/raw_data/GEOID_ALAND.csv")[,c("GEOID", "ALAND")]
+
 ct_info_data = read.csv("data/ct_info_df.csv") %>% 
   rename(countyFIPS= FIPS)
+
 IL_cases_data = read.csv("data/IL_cases_data.csv")
 IL_deaths_data = read.csv("data/IL_deaths_data.csv")
 ct_income_data = read.csv("data/ct_income_data.csv")
 
 # ct_income_data = read.csv("data/IL_cases_data.csv")
+ct_info_data = ct_info_data %>% left_join(GEOID_ALAND, by = "GEOID")
+
 ct_info_data
 IL_cases_data
+
 ```
 
 ```{r}
@@ -78,15 +84,15 @@ ct_info_cases_data = ct_info_data %>%
          estimate_cases2 = cases2*POPULATION/county_pop,
          estimate_cases3 = cases3*POPULATION/county_pop,
          estimate_cases4 = cases4*POPULATION/county_pop,
-         estimate_cases1_density = estimate_cases1/Shape_Area,
-         estimate_cases2_density = estimate_cases2/Shape_Area,
-         estimate_cases3_density = estimate_cases3/Shape_Area,
-         estimate_cases4_density = estimate_cases4/Shape_Area,
+         estimate_cases1_density = estimate_cases1/ALAND*2.59*10^6,
+         estimate_cases2_density = estimate_cases2/ALAND*2.59*10^6,
+         estimate_cases3_density = estimate_cases3/ALAND*2.59*10^6,
+         estimate_cases4_density = estimate_cases4/ALAND*2.59*10^6,
          pop_density_class = as_factor(case_when(
-                             POPULATION < quantile(POPULATION,0.25) ~ "1",
-                             POPULATION >= quantile(POPULATION,0.25) &  POPULATION < quantile(POPULATION,0.5) ~ "2",
-                             POPULATION >= quantile(POPULATION,0.5) &  POPULATION < quantile(POPULATION,0.75) ~ "3",
-                             POPULATION >= quantile(POPULATION,0.75) ~ "4",
+                             POP_DENSITY < quantile(POP_DENSITY,0.25) ~ "1",
+                             POP_DENSITY >= quantile(POP_DENSITY,0.25) &  POP_DENSITY < quantile(POP_DENSITY,0.5) ~ "2",
+                             POP_DENSITY >= quantile(POP_DENSITY,0.5) &  POP_DENSITY < quantile(POP_DENSITY,0.75) ~ "3",
+                             POP_DENSITY >= quantile(POP_DENSITY,0.75) ~ "4",
                              )),
          income_class = as_factor(case_when(
                              income < quantile(income,0.25) ~ "1",
@@ -101,8 +107,60 @@ miss_idx = is.na(ct_info_cases_data$estimate_cases4)
 ct_info_cases_data$estimate_cases4[miss_idx] = 0
 ```
 
+
+
+```{r}
+n = 10
+exposure4 = ct_info_cases_data %>% 
+  select (GEOID, POPULATION, POP_DENSITY, pop_density_class, income, income_class, exposure4) %>%
+  arrange(desc(exposure4)) %>% 
+  slice(1:n)
+
+exposure3 = ct_info_cases_data %>% 
+  select (GEOID, POPULATION, POP_DENSITY, pop_density_class, income, income_class, exposure3) %>%
+  arrange(desc(exposure3)) %>% 
+  slice(1:n)
+
+exposure2 = ct_info_cases_data %>% 
+  select (GEOID, POPULATION, POP_DENSITY, pop_density_class, income, income_class, exposure2) %>%
+  arrange(desc(exposure2))%>% 
+  slice(1:n)
+
+exposure1 = ct_info_cases_data %>% 
+  select (GEOID, POPULATION, POP_DENSITY, pop_density_class, income, income_class, exposure1) %>%
+  arrange(desc(exposure1)) %>% 
+  slice(1:n)
+
+exposure4 %>% 
+  inner_join(exposure3, by = "GEOID") %>% 
+  inner_join(exposure2, by = "GEOID") %>% 
+  inner_join(exposure1, by = "GEOID") %>% 
+  select(GEOID, POPULATION.x, POP_DENSITY.x, pop_density_class.x, income.x, income_class.x, exposure1, exposure2, exposure3, exposure4)
+```
+
+```{r}
+ct_info_cases_data %>% 
+  select (GEOID, POPULATION, POP_DENSITY, pop_density_class, income, income_class, exposure3) %>%
+  arrange(desc(exposure3))
+
+```
+
+
+
+```{r}
+ct_info_cases_data %>% 
+  select (GEOID, POPULATION, POP_DENSITY, pop_density_class, income, income_class) %>% 
+  filter (GEOID %in% c(17043844601, 17031281900, 17197883522, 17031836200, 17031081401, 17031839100, 17031081800, 17031804603, 17031320100, 17031320400, 17031081500))
+
+ct_info_cases_data %>% 
+  select (GEOID, POPULATION, POP_DENSITY, pop_density_class, income, income_class) %>% 
+  filter (GEOID %in% c(17093890700, 17093890400, 17031804507, 17089850701, 17043846411, 17043841703, 17043846310, 17031803608, 17031806002, 17031320100, 17031330100, 17093890101))
+```
+
+
 ```{r}
 mean(ct_info_cases_data$income > 15597391)
+
 ```
 
 ```{r}

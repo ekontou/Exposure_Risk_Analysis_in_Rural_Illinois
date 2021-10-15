@@ -224,7 +224,7 @@ In both urban and rural area, people with less income has less exposure risk to 
 median1 = median(c(ct_info_cases_data %>%
    filter(pop_density_class %in% c(1,2)) %>% # urban area
    filter(exposure2 >= 0  | is.na(exposure2)) %>% 
-    select(exposure2))[[1]],na.rm = TRUE)
+    select(exposure1))[[1]],na.rm = TRUE)
 RU_boxplot1 = ct_info_cases_data %>%
    filter(pop_density_class %in% c(1,2)) %>% # urban area
    filter(exposure2 >= 0 | is.na(exposure2)) %>%
@@ -232,7 +232,7 @@ RU_boxplot1 = ct_info_cases_data %>%
    aes(x = "", y = exposure2, group = income_class) +
    geom_boxplot() +
     geom_hline(aes(yintercept = median1), col = "#990000", linetype = 5, show.legend = FALSE) +
-   coord_cartesian(ylim = c(0,0.005)) +
+   coord_cartesian(ylim = c(0,0.01)) +
   # scale_color_grey(start=0.8, end=0.2)+
   # scale_fill_distiller(palette = "Blues" ,direction = 1) +
    labs(x = "Rural Area", y = "") + 
@@ -262,7 +262,7 @@ RU_boxplot2 = ct_info_cases_data %>%
 p = gridExtra::grid.arrange(RU_boxplot1, RU_boxplot2, ncol = 2,
                         left = "Exposure Entropy",
                         top = "COVID-19 Exposure Entropy during Phase 2 in Rural and Urban Illinois") 
-ggsave( "/Users/zhangyuqi/Desktop/COVID-19 Exposure Entropy during Phase 2 in Rural and Urban Illinois.png", plot = p)
+ggsave( "/Users/zhangyuqi/Desktop/exposure/COVID-19 Exposure Entropy during Phase 2 in Rural and Urban Illinois.png", plot = p)
 ```
 
 
@@ -275,15 +275,14 @@ filter(pop_density_class %in% c(1,2)) %>% # urban area
 ggplot() +
  aes(x = "", y = estimate_cases4_density, color=, group = income_class) +
  geom_boxplot() +
- coord_cartesian(ylim = c(0, 6*10^6)) +
+ coord_cartesian(ylim = c(0, 100)) +
  geom_hline(aes(yintercept = median(c(ct_info_cases_data %>% 
-filter(pop_density_class %in% c(1,2)) %>% select(estimate_cases4_density))[[1]])
+filter(pop_density_class %in% c(1,2)) %>% select(estimate_cases4_density))[[1]],na.rm = TRUE)
                   ), col = "#990000", linetype = 5) +
  labs(x = "Rural Area", y = "") +
  theme_classic() +
  theme(aspect.ratio = 5) +
  facet_grid(vars(), vars(income_class))
-
 
 # urban area
 RU_boxplot2 = ct_info_cases_data %>% 
@@ -291,7 +290,7 @@ filter(pop_density_class %in% c(3,4)) %>% # urban area
 ggplot() +
  aes(x = "", y = estimate_cases4_density, color=, group = income_class) +
  geom_boxplot() +
-coord_cartesian(ylim = c(0, 15*10^6)) +
+coord_cartesian(ylim = c(0, 1000)) +
  geom_hline(aes(yintercept = median(c(ct_info_cases_data %>% filter(pop_density_class %in% c(3,4)) %>% select(estimate_cases4_density))[[1]],na.rm = TRUE)
                   ), col = "#990000", linetype = 5) +
  labs(x = "Urban Area", y = "") +
@@ -300,9 +299,9 @@ coord_cartesian(ylim = c(0, 15*10^6)) +
  facet_grid(vars(), vars(income_class))
 
 p = gridExtra::grid.arrange(RU_boxplot1, RU_boxplot2, ncol = 2,
-                        left = "Cumulative Case Number",
-                        top = "COVID-19 Cumulative Case Number at the End of Phase 4 in Rural and Urban Illinois")
-p = ggsave( "/Users/zhangyuqi/Desktop/COVID-19 Cumulative Case Number at the End of Phase 4 in Rural and Urban Illinois.png", plot = p)
+                        left = "Case Density (number of cases per square mile)",
+                        top = "COVID-19 Case Density at the End of Phase 4 in Rural and Urban Illinois")
+p = ggsave( "/Users/zhangyuqi/Desktop/case_number/COVID-19 Case Density at the End of Phase 4 in Rural and Urban Illinois.png", plot = p)
 ```
 
 ```{r}
@@ -359,5 +358,13 @@ p = gridExtra::grid.arrange(get(RU_plot_vector,1), RU_boxplot2, ncol = 2,
                         left = "Exposure Entropy",
                         top = "Note: income class 1,2,3,4 stands for bottom 25% to the top 25% respectfully") 
 ggsave( "mtcars.png", plot = p)
+```
+```{r}
+t.test(ct_info_cases_data[ct_info_cases_data$pop_density_class <= 2,"exposure1"]
+       ,ct_info_cases_data[ct_info_cases_data$pop_density_class <= 2,"exposure2"], 
+        alternative = c("greater")
+        )
+
+
 ```
 
