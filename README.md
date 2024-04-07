@@ -1,3 +1,3 @@
 ## Exposure Risk Analysis in Rural Illinois
 
-Yuqi, please add a decsription of how to use the code here.
+Code for data analytics of the "Disparities in COVID-19 Exposure Risk across Illinois Urban and Rural Regions and Income Groups" paper. Currently under review.
